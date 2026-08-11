@@ -1,0 +1,512 @@
+/*
+ * The public front door.
+ *
+ * One painting, a few of its pieces cut out so they can move, and a column of
+ * type sitting in the pale water on the left. There is no dark scheme here on
+ * purpose: the painting is a pale
+ * sunset, so the page is light and the ink is dark, and that is the whole story
+ * in either scheme. A dark variant would mean dark cards on a pale sunset.
+ */
+
+:root {
+  --paper: #eff2f0;
+
+  /* Below the hero the painting is a presence, not a picture: these let roughly
+     a tenth to a quarter of it through, enough to read as warmth and texture
+     without competing with body copy. They loosen as the page descends, so the
+     art surfaces gradually rather than stopping dead at the last band. Card
+     surfaces sit on top of a scrim, so at 0.9 the art reaching them is ~2% —
+     translucent enough to belong, opaque enough to read against. */
+  --scrim: rgba(250, 247, 239, 0.88);
+  --scrim-open: rgba(250, 247, 239, 0.83);
+  --scrim-foot: rgba(250, 247, 239, 0.76);
+
+  --surface: rgba(255, 253, 248, 0.9);
+  --surface-2: var(--scrim);
+  --ink: #171e1b;
+  --ink-2: #48534d;
+  --ink-3: #79847e;
+  --line: #d9e0dc;
+  --line-2: #c7d0cb;
+  --accent: #116655;
+  --accent-2: #0c4a3e;
+  --accent-soft: #ddece7;
+  --accent-line: #9fc7bb;
+  --clay: #b4652f;
+  --clay-soft: #f3e6db;
+  --shadow: 0 1px 2px rgba(20, 30, 26, 0.04), 0 8px 24px rgba(20, 30, 26, 0.06);
+  --serif: "Iowan Old Style", "Charter", "Palatino", Georgia, ui-serif, serif;
+  --sans: system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  --mono: ui-monospace, "SF Mono", "JetBrains Mono", Menlo, Consolas, monospace;
+  --radius: 14px;
+
+  /* The page's left edge. The column used to be centred, which on a wide screen
+     left the headline sitting a third of the way in while the painting's own
+     subject — the tree, the sun, the pagoda — was already over on the right.
+     Pushing the type left gives the two of them their own halves.
+
+     Scaled off the viewport and floored at zero, so a phone keeps the 24px of
+     `.wrap` padding and nothing more. The `- 30px` is what holds that floor down
+     until there is room worth spending. */
+  --gutter: clamp(0px, 8vw - 30px, 220px);
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  background: var(--paper);
+  color: var(--ink);
+  font-family: var(--sans);
+  line-height: 1.65;
+  font-size: clamp(15px, 0.5vw + 14px, 16.5px);
+  -webkit-font-smoothing: antialiased;
+}
+
+::selection { background: var(--accent-soft); color: var(--accent-2); }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; border-radius: 3px; }
+
+h1, h2, h3 { margin: 0; text-wrap: balance; }
+p { margin: 0; }
+
+/* Left-aligned, not centred — and the SAME gutter the masthead uses, so the
+   wordmark stays over the headline and the sections below the hero keep the
+   hero's left edge. Moving the hero alone would put a jog in the page the
+   moment anyone scrolled. */
+.wrap { max-width: 940px; margin: 0 auto 0 var(--gutter); padding: 0 24px; }
+
+/* --- masthead ---
+   Floats over the artwork rather than sitting in a bar of its own: a rule across
+   the top would cut the sky off and announce a chrome the page does not
+   otherwise have. Absolute, so the hero starts at y=0 and the art runs up behind
+   the wordmark. */
+.topbar {
+  position: absolute;
+  inset: 0 0 auto;
+  z-index: 3;
+  --accent: #0e6a58;
+  --accent-soft: rgba(255, 255, 255, 0.55);
+  color: #16211d;
+}
+.topbar__in {
+  display: flex;
+  align-items: center;
+  height: 58px;
+  max-width: 940px;
+  margin: 0 auto 0 var(--gutter);
+  padding: 0 24px;
+}
+.brand {
+  font-family: var(--serif);
+  font-weight: 600;
+  font-size: 1.2rem;
+  letter-spacing: -0.01em;
+  display: flex;
+  align-items: center;
+  gap: 9px;
+}
+.brand .dot {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: var(--accent);
+  box-shadow: 0 0 0 4px var(--accent-soft);
+}
+
+/* --- hero ---
+   Sized to hold a whole composition rather than a strip of one: `cover` over a
+   short band crops a 16:9 painting down to a horizon and nothing else. */
+.hero {
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  min-height: min(100svh, 880px);
+  padding: clamp(96px, 14vh, 150px) 0 clamp(56px, 9vh, 104px);
+
+  /* Ink and surfaces retuned for sitting on paint rather than on paper: a deeper
+     ink, a stronger accent, and surfaces that are translucent instead of solid.
+     Overriding the tokens rather than the rules means the title, tagline, cards
+     and their hover states all follow at once. */
+  --ink: #16211d;
+  --ink-2: #3f4b45;
+  --ink-3: #6b7671;
+  --accent: #0e6a58;
+  --accent-2: #0a4739;
+  --accent-soft: rgba(224, 240, 233, 0.72);
+  --accent-line: rgba(14, 106, 88, 0.3);
+  --line-2: rgba(22, 33, 29, 0.14);
+  --surface: rgba(255, 255, 255, 0.6);
+  --shadow: 0 1px 2px rgba(22, 33, 29, 0.05), 0 10px 30px rgba(22, 33, 29, 0.09);
+  color: var(--ink);
+}
+
+/* One painting behind the entire page, with three of its parts cut out onto
+   their own layers so they can move independently. This replaced a six-frame
+   crossfade: those frames turned out to be six redraws of the scene rather than
+   six moments of it, so dissolving between them read as a faint blur instead of
+   as movement. Moving the pieces themselves is cheaper and legible.
+
+   `position: fixed` rather than a background on the hero, for three reasons: the
+   whole page then crawls over one still painting, which IS the parallax — no
+   scroll-linked animation needed, the layer simply never moves; it sidesteps
+   `background-attachment: fixed`, which iOS has never handled properly; and it
+   is sized to the VIEWPORT rather than to the hero, which is what rescues the
+   phone case — `cover` over a box as tall as the hero cropped to about a tenth
+   of the painting's width.
+
+   z-index -1 paints above body's background but below all body content, so
+   `--paper` stays the fallback if the images never arrive. */
+.art {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+
+  /* Every layer is baked to the base plate's exact canvas, so this one
+     declaration registers all of them and there is no per-layer positioning to
+     drift out of step. */
+  --art-pos: 58% center;
+  background: #f3e7cf url("main.webp") var(--art-pos) / cover no-repeat;
+  transform-origin: 68% 45%;
+}
+
+.art__layer {
+  position: absolute;
+  inset: 0;
+  background-position: var(--art-pos);
+  background-size: cover;
+  background-repeat: no-repeat;
+}
+
+.art__layer--canopy {
+  background-image: url("layer-canopy.webp");
+  /* Pivot at the branch root in the top-right corner, where the bough leaves the
+     trunk. Rotating about the layer's centre would swing the whole canopy
+     sideways through the sky rather than bend it. */
+  transform-origin: 96% 12%;
+}
+.art__layer--clouds { background-image: url("layer-clouds.webp"); }
+.art__layer--water { background-image: url("layer-water.webp"); }
+.art__layer--birds { background-image: url("layer-birds.webp"); }
+.art__layer--leaves { background-image: url("layer-leaves.webp"); }
+
+/* A cream wash, heavy on the left and gone by the sun. Belongs to the hero, not
+   to the artwork — the art layer now spans the whole page, and this left-weighted
+   treatment is only right where the title is. The pale water the text sits over
+   is already high-contrast, so this is not here to rescue legibility; it seats
+   the type on the painting and keeps the far corners (a teal sky edge, grasses
+   under the cards) from competing with it. The last stop hands over to the first
+   band's scrim so the two meet without a seam. */
+.hero__veil {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  /* Positioned siblings paint above static in-flow content, so without a lift on
+     the text below this wash would sit over the title rather than under it. It is
+     done this way round — raising the text rather than sinking the veil to -1
+     behind an isolated hero — because the doors' backdrop-filter samples only
+     within its nearest stacking context: isolating the hero would blur the veil
+     and lose the painting behind the cards. */
+  /* Held heavier through the middle than legibility alone would need. The cloud
+     bank runs straight behind the headline and, unlike the rest of the painting,
+     it drifts — text with something moving behind it is harder to settle on than
+     the same text over something still. */
+  background:
+    linear-gradient(100deg,
+      rgba(250, 243, 228, 0.87) 0%,
+      rgba(250, 243, 228, 0.74) 30%,
+      rgba(250, 243, 228, 0.33) 58%,
+      rgba(250, 243, 228, 0) 76%),
+    linear-gradient(to bottom,
+      rgba(250, 243, 228, 0.34) 0%,
+      rgba(250, 243, 228, 0) 24%),
+    linear-gradient(to bottom, transparent 88%, var(--scrim) 100%);
+}
+
+.hero .wrap { position: relative; z-index: 1; }
+
+
+/* The tip of this canopy sits about 900px from the pivot, so a degree of
+   rotation is roughly 16px of travel out there and almost nothing near the
+   branch — which is exactly how a bough moves. Below about 0.6deg total the tip
+   creeps at under 1px/sec and the tree reads as painted on. */
+@keyframes canopy-sway {
+  from { rotate: -0.85deg; }
+  to   { rotate:  0.95deg; }
+}
+
+/* Gliding, not migrating. A one-way flight would need the flock to leave frame
+   and pop back at the far side; drifting a little either way reads as birds
+   riding a thermal and loops with no seam. */
+@keyframes birds-glide {
+  from { translate: -3.1% 1.1%; }
+  to   { translate:  3.9% -1.6%; }
+}
+
+/* Falling, with the fade doing the looping. The layer holds seven leaves at
+   fixed positions, so it has to reset somewhere — fading out at the bottom and
+   back in at the top means the reset happens while they are invisible. */
+@keyframes leaves-fall {
+  0%   { translate:  6px -22px;  rotate: -1.5deg; opacity: 0; }
+  14%  { opacity: 0.92; }
+  80%  { opacity: 0.92; }
+  100% { translate: -30px 104px; rotate:  2.5deg; opacity: 0; }
+}
+
+/* Cloud banks are enormous and far away, so they move slowly and only sideways.
+   Anything faster reads as smoke. */
+@keyframes clouds-drift {
+  from { translate: -1.8% 0; }
+  to   { translate:  2.4% 0; }
+}
+
+/* A reflection does not travel — the water under it does. Breathing the opacity
+   with a hair of vertical movement reads as the surface working, where sliding
+   the whole column would look like the sun itself was moving. Much quicker than
+   anything else on the page, because water is. */
+@keyframes water-shimmer {
+  from { opacity: 0.78; translate: 0 -0.25%; }
+  to   { opacity: 1;    translate: 0  0.3%; }
+}
+
+/* The whole-painting drift, now much gentler. It used to be the only motion on
+   the page and had to carry the effect alone, which took a zoom deep enough to
+   crop into the composition. Now that the pieces move it only has to keep the
+   frame alive. */
+@keyframes art-drift {
+  from { translate: -2.5% -0.8%; }
+  to   { translate:  2.5%  0.8%; }
+}
+@keyframes art-breathe { from { scale: 1.06; } to { scale: 1.1; } }
+
+/* Not gated on width. These are compositor-driven properties on four layers,
+   which a phone handles fine, and they are the only motion the page has. */
+@media (prefers-reduced-motion: no-preference) {
+  .art {
+    animation:
+      art-drift 26s cubic-bezier(0.45, 0, 0.55, 1) infinite alternate,
+      art-breathe 41s ease-in-out infinite alternate;
+    /* Negative, so the page lands mid-stroke where the drift is quickest rather
+       than at a turnaround where it is nearly still. From a standing start it
+       covered 6px in four seconds — long enough to read as a static image
+       before it got going. The offsets differ so the two begin out of phase. */
+    animation-delay: -13s, -20s;
+  }
+  .art__layer--clouds { animation: clouds-drift 74s ease-in-out infinite alternate; }
+  .art__layer--water { animation: water-shimmer 9s ease-in-out infinite alternate; }
+  .art__layer--canopy { animation: canopy-sway 19s ease-in-out infinite alternate; }
+  .art__layer--birds { animation: birds-glide 31s ease-in-out infinite alternate; }
+  /* Negative here too, or the leaves are invisible for the first three seconds:
+     the fall starts at opacity 0 by design, and a page landing on that reads as
+     a layer that failed to load. */
+  .art__layer--leaves { animation: leaves-fall 24s linear infinite; animation-delay: -7s; }
+}
+
+/* Portrait crops a 16:9 painting hard whatever you do — at phone proportions the
+   fixed layer shows about a quarter of its width. Centred right of the sun,
+   because that is the quarter still holding the sun, the far mountains and the
+   boat. The hero's wash turns vertical to match: the type stacks down the middle
+   here rather than sitting in a left-hand column. */
+@media (max-width: 760px) {
+  .art { --art-pos: 62% center; }
+  .hero__veil {
+    background: linear-gradient(to bottom,
+      rgba(250, 243, 228, 0.74) 0%,
+      rgba(250, 243, 228, 0.52) 40%,
+      rgba(250, 243, 228, 0.46) 64%,
+      var(--scrim) 100%);
+  }
+}
+
+h1.title {
+  font-family: var(--serif);
+  font-weight: 600;
+  letter-spacing: -0.03em;
+  line-height: 1.04;
+  font-size: clamp(2.4rem, 6vw, 4rem);
+}
+h1.title .amp { color: var(--accent); font-style: italic; }
+
+.thesis {
+  font-family: var(--serif);
+  font-size: clamp(1.2rem, 2.5vw, 1.65rem);
+  line-height: 1.35;
+  margin-top: 24px;
+  max-width: 26ch;
+  font-weight: 500;
+}
+.thesis b { color: var(--accent); font-weight: 600; }
+
+/* Held narrower than the 56ch it would take, so the column stays inside the pale
+   water and does not run out over the sun. */
+.tagline {
+  margin-top: 20px;
+  color: var(--ink-2);
+  max-width: 48ch;
+  font-size: 1.05rem;
+}
+
+/* --- the two doors --- */
+.doors {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  margin-top: 40px;
+}
+@media (max-width: 660px) { .doors { grid-template-columns: 1fr; } }
+
+.door {
+  display: block;
+  text-decoration: none;
+  color: inherit;
+  background: var(--surface);
+  border: 1px solid var(--line-2);
+  border-radius: var(--radius);
+  padding: 22px 24px;
+  box-shadow: var(--shadow);
+  transition: border-color 0.15s ease, transform 0.15s ease, background-color 0.15s ease;
+
+  /* Frosted, not opaque. Two solid white slabs would read as a form pasted onto
+     a picture; letting the water through at low contrast keeps them part of the
+     scene while the blur holds the words steady over whichever frame is up. */
+  backdrop-filter: blur(9px) saturate(1.08);
+  -webkit-backdrop-filter: blur(9px) saturate(1.08);
+}
+.door:hover {
+  border-color: var(--accent-line);
+  transform: translateY(-2px);
+  background-color: rgba(255, 255, 255, 0.74);
+}
+.door--primary:hover { background-color: rgba(224, 240, 233, 0.86); }
+
+.door .lbl {
+  font-family: var(--mono);
+  font-size: 0.66rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+  display: block;
+  margin-bottom: 9px;
+}
+.door h2 {
+  font-family: var(--sans);
+  font-weight: 650;
+  font-size: 1.12rem;
+  display: flex;
+  align-items: center;
+  gap: 9px;
+}
+.door p { font-size: 0.88rem; color: var(--ink-2); margin-top: 7px; }
+.door .go { color: var(--accent); font-weight: 700; }
+
+.door--primary { border-color: var(--accent-line); background: var(--accent-soft); }
+.door--primary h2, .door--primary .go { color: var(--accent-2); }
+.door--primary p { color: var(--accent-2); opacity: 0.85; }
+.door--primary .lbl { color: var(--accent-2); opacity: 0.7; }
+
+/* --- how it works --- */
+.band {
+  border-top: 1px solid var(--line);
+  background: var(--surface-2);
+  padding: clamp(40px, 5vw, 68px) 0;
+}
+.band--open { background: var(--scrim-open); }
+
+.eyebrow {
+  font-family: var(--mono);
+  font-size: 0.7rem;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--accent);
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  margin-bottom: 16px;
+}
+.eyebrow::before { content: ""; width: 22px; height: 1.5px; background: var(--accent-line); }
+
+h2.sec {
+  font-family: var(--serif);
+  font-weight: 600;
+  font-size: clamp(1.5rem, 3vw, 2.1rem);
+  letter-spacing: -0.02em;
+  line-height: 1.15;
+}
+.sec-lede { color: var(--ink-2); margin-top: 12px; max-width: 60ch; }
+
+.steps {
+  display: flex;
+  flex-wrap: wrap;
+  margin-top: 26px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--surface);
+  overflow: hidden;
+  box-shadow: var(--shadow);
+}
+.step { flex: 1 1 160px; padding: 20px; min-width: 0; }
+.step + .step { border-left: 1px solid var(--line); }
+@media (max-width: 720px) {
+  .step + .step { border-left: none; border-top: 1px solid var(--line); }
+}
+.step .n { font-family: var(--mono); font-size: 0.7rem; color: var(--ink-3); letter-spacing: 0.1em; }
+.step h3 { font-family: var(--sans); font-weight: 650; font-size: 0.98rem; margin-top: 7px; }
+.step p { font-size: 0.85rem; color: var(--ink-2); margin-top: 5px; }
+
+.step--boundary {
+  flex: 0 0 auto;
+  background: var(--accent);
+  color: #fff;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  text-align: center;
+  min-width: 150px;
+}
+.step--boundary .bar { font-size: 1.4rem; line-height: 1; opacity: 0.9; }
+.step--boundary strong {
+  font-family: var(--mono);
+  font-size: 0.66rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  margin-top: 8px;
+}
+.step--boundary span { font-size: 0.78rem; opacity: 0.9; margin-top: 4px; line-height: 1.4; }
+
+.note {
+  margin-top: 18px;
+  font-size: 0.88rem;
+  color: var(--ink-3);
+  display: flex;
+  gap: 8px;
+  align-items: baseline;
+  max-width: 66ch;
+}
+
+/* --- promises --- */
+.promises { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-top: 26px; }
+@media (max-width: 660px) { .promises { grid-template-columns: 1fr; } }
+.promise {
+  border: 1px solid var(--line);
+  border-left: 3px solid var(--accent);
+  border-radius: 9px;
+  padding: 16px 18px;
+  background: var(--surface);
+}
+.promise h3 { font-size: 0.96rem; font-weight: 650; }
+.promise p { font-size: 0.86rem; color: var(--ink-2); margin-top: 5px; }
+
+footer {
+  border-top: 1px solid var(--line);
+  background: var(--scrim-foot);
+  padding: 30px 0 56px;
+  color: var(--ink-3);
+  font-size: 0.82rem;
+}
+footer .wrap { display: flex; justify-content: space-between; gap: 18px; flex-wrap: wrap; }
+
+@media (prefers-reduced-motion: reduce) {
+  * { transition: none !important; animation: none !important; }
+}
