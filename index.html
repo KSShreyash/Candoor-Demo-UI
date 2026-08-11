@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Candoor — guided demo</title>
+    <link rel="stylesheet" href="assets/landing.css" />
+    <style>
+      .demo-badge {
+        position: fixed; top: 0.8rem; right: 0.8rem; z-index: 998;
+        font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
+        font-size: 0.62rem; letter-spacing: 0.1em; text-transform: uppercase;
+        background: rgba(10, 20, 18, 0.7); color: #f4efe0; padding: 0.3rem 0.6rem; border-radius: 999px;
+      }
+      /* One door only (candidate side) — don't stretch it across a
+         two-column grid built for a pair. */
+      .doors { grid-template-columns: 1fr; max-width: 26rem; }
+    </style>
+  </head>
+  <body>
+    <p class="demo-badge">Guided demo — no real data</p>
+
+    <div class="art" aria-hidden="true">
+      <div class="art__layer art__layer--clouds"></div>
+      <div class="art__layer art__layer--water"></div>
+      <div class="art__layer art__layer--birds"></div>
+      <div class="art__layer art__layer--canopy"></div>
+      <div class="art__layer art__layer--leaves"></div>
+    </div>
+
+    <header class="topbar">
+      <div class="topbar__in"><span class="brand"><span class="dot"></span>Candoor</span></div>
+    </header>
+
+    <main>
+      <section class="hero">
+        <div class="hero__veil" aria-hidden="true"></div>
+        <div class="wrap">
+          <h1 class="title">Cand<span class="amp">oo</span>r</h1>
+          <p class="thesis">A guided tour of the candidate side, with mock data — nothing here is real.</p>
+          <p class="tagline">Walk through what a candidate sees: the key, the round's promises, the interview, and the consent boundary before anything is stored — with a step-by-step guide and a panel showing exactly what the AI knows and what rules are locked in.</p>
+
+          <div class="doors">
+            <a class="door door--primary" href="candidate.html">
+              <span class="lbl">Candidate walkthrough</span>
+              <h2>See the candidate side <span class="go" aria-hidden="true">→</span></h2>
+              <p>The key, the round's promises, the interview, and the consent boundary before anything is stored.</p>
+            </a>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <footer><div class="wrap"><span>Candoor</span><span>Guided demo build</span></div></footer>
+  </body>
+</html>

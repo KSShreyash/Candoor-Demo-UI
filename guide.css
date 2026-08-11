@@ -1,0 +1,148 @@
+/* Shared guide overlay: step panel + spotlight ring. Loaded after the page's
+   own stylesheet so its z-index sits above everything. */
+
+.guide-panel {
+  /* Position (top/left/right/bottom) is set inline by guide.js, chosen each
+     step from where the spotlighted element actually is, so the panel never
+     sits on top of the thing it's explaining. This block only supplies a
+     fallback corner for the rare case nothing is spotlighted yet. */
+  position: fixed;
+  right: 1.2rem;
+  bottom: 1.2rem;
+  z-index: 999;
+  width: min(23rem, calc(100vw - 2.4rem));
+  /* Translucent + blurred rather than a solid card: the panel floats over
+     real, live page content (not a screenshot), so it should read as an
+     overlay you can still see through, not another opaque box competing
+     with the page. */
+  background: rgba(22, 28, 25, 0.72);
+  backdrop-filter: blur(14px) saturate(140%);
+  -webkit-backdrop-filter: blur(14px) saturate(140%);
+  color: #f4efe0;
+  border: 1px solid rgba(244, 239, 224, 0.14);
+  border-radius: 14px;
+  padding: 1.1rem 1.2rem;
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.32);
+  font-family: "Iowan Old Style", "Palatino Linotype", Palatino, Charter, Georgia, serif;
+  /* One easing curve, reused across the sidebar drawers, this panel's
+     repositioning, the spotlight ring and the blocker fade — so the whole
+     demo reads as one motion system instead of every element picking its
+     own timing. */
+  transition:
+    top 0.32s cubic-bezier(0.2, 0.7, 0.3, 1),
+    right 0.32s cubic-bezier(0.2, 0.7, 0.3, 1),
+    bottom 0.32s cubic-bezier(0.2, 0.7, 0.3, 1),
+    left 0.32s cubic-bezier(0.2, 0.7, 0.3, 1);
+  animation: guide-panel-in 0.3s cubic-bezier(0.2, 0.7, 0.3, 1);
+}
+
+@keyframes guide-panel-in {
+  from { opacity: 0; transform: translateY(10px) scale(0.98); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+/* Title + body only — the count/buttons stay put so Back/Next/Skip never
+   move under the pointer between steps, only the copy between them
+   cross-fades. */
+.guide-panel__content {
+  transition: opacity 0.16s ease, transform 0.16s ease;
+}
+.guide-panel__content--swap {
+  opacity: 0;
+  transform: translateY(4px);
+}
+
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  /* No blur support: fall back to a plainer translucency so text stays
+     legible without the frosted-glass effect. */
+  .guide-panel { background: rgba(15, 19, 17, 0.88); }
+}
+
+.guide-panel__count {
+  font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
+  font-size: 0.62rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  opacity: 0.65;
+}
+
+.guide-panel__title {
+  font-size: 1.05rem;
+  font-weight: 600;
+  margin: 0.35rem 0 0.4rem;
+}
+
+.guide-panel__body {
+  font-size: 0.92rem;
+  line-height: 1.5;
+  margin: 0;
+}
+
+.guide-panel__row {
+  display: flex;
+  gap: 0.5rem;
+  margin-top: 1rem;
+  align-items: center;
+}
+
+.guide-panel__row button {
+  font: inherit;
+  font-size: 0.84rem;
+  font-weight: 600;
+  padding: 0.45rem 0.85rem;
+  border-radius: 8px;
+  border: 1px solid rgba(244, 239, 224, 0.3);
+  background: transparent;
+  color: #f4efe0;
+  cursor: pointer;
+}
+
+.guide-panel__row button:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
+.guide-panel__next {
+  background: #0f8b82 !important;
+  border-color: #0f8b82 !important;
+}
+
+.guide-panel__skip {
+  margin-left: auto;
+  opacity: 0.7;
+  font-weight: 400 !important;
+}
+
+/* Sits under the panel (999) but over everything else on the page, so the
+   only way to affect anything while the guide is running is through the
+   panel's own Back / Next / Skip — a light tint rather than a heavy scrim,
+   since its job is to intercept clicks, not to hide the page. */
+.guide-blocker {
+  position: fixed;
+  inset: 0;
+  z-index: 990;
+  background: rgba(6, 10, 9, 0.1);
+  cursor: default;
+  animation: guide-blocker-in 0.24s ease;
+}
+
+@keyframes guide-blocker-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.guide-spotlight {
+  outline: 3px solid #f0574a !important;
+  outline-offset: 3px !important;
+  border-radius: 10px;
+  transition: outline-offset 0.2s ease;
+  scroll-margin: 2rem;
+  /* The ring settles into place from slightly further out each time it
+     lands on a new target, instead of just appearing there instantly. */
+  animation: guide-spotlight-in 0.4s cubic-bezier(0.2, 0.7, 0.3, 1);
+}
+
+@keyframes guide-spotlight-in {
+  from { outline-offset: 10px; }
+  to { outline-offset: 3px; }
+}

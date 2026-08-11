@@ -1,0 +1,485 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Candoor demo — candidate walkthrough</title>
+    <link rel="stylesheet" href="assets/interview.css" />
+    <link rel="stylesheet" href="guide.css" />
+    <style>
+      /* The rules panel SQUEEZES the conversation rather than floating over
+         it — closed, it takes zero width and .sea has the full row; opened,
+         it claims real width and .sea (flex:1, min-width:0) yields exactly
+         that much room.
+
+         ⚠ width:0 alone does NOT reach true zero: .paper's own padding
+         (inherited) still occupies space regardless of box-sizing, since
+         content area can't go negative — a border-box element can't render
+         narrower than its own padding. That leftover sliver (just the
+         padding, nothing else) is what was visibly "spilling" onto the main
+         page and eating into .sea's width, throwing off centering. Padding
+         has to collapse to 0 right alongside width for closed to mean
+         truly, fully gone. */
+      body { display: flex; }
+
+      .sea { flex: 1 1 auto; min-width: 0; }
+
+      .sidebar-open-btn {
+        position: fixed;
+        top: 0.9rem;
+        right: 1rem;
+        z-index: 950;
+      }
+
+      /* .sidebar adds sizing on top of .paper (background, gap, vertical
+         scroll — inherited as-is from interview.css); padding is
+         overridden explicitly below instead of inherited, since it has to
+         collapse to 0 while closed. Width is a share of the viewport
+         rather than a fixed measure, with floor/ceiling so it never gets
+         uncomfortably narrow or absurdly wide. The extra padding-top (only
+         while open) clears the fixed toggle button above it, which stays
+         fixed in the corner regardless of layout mode. */
+      .sidebar {
+        flex: 0 0 auto;
+        width: 0;
+        min-width: 0;
+        padding: 0;
+        overflow: hidden;
+        transition:
+          width 0.32s cubic-bezier(0.2, 0.7, 0.3, 1),
+          padding 0.32s cubic-bezier(0.2, 0.7, 0.3, 1);
+      }
+      .sidebar.open {
+        width: clamp(20rem, 40vw, 40rem);
+        padding: clamp(1.4rem, 2.6vw, 2.8rem);
+        padding-top: 4.6rem;
+        overflow-y: auto;
+      }
+
+      /* interview.css gives #promise-step `flex: 1 1 auto` for the ORIGINAL
+         two-panel design, where it needed to grow and scroll internally
+         while draft-step stayed pinned to the very bottom of the column.
+         Now that every section (including draft-step) is just another tab
+         in one flat stack, that grow-to-fill behavior left a large dead gap
+         between the last tab and "What would be submitted" — #promise-step
+         claiming all the leftover height and shoving everything after it
+         down. Tabs should stack at their own size with the sidebar's normal
+         gap between them, nothing stretching to fill space. */
+      #promise-step { flex: none; }
+
+      /* interview.css styles #promise-step's flex sizing and #org-context's
+         quote box (background, teal left rule, padding) by ID — rules
+         written for the login sidebar's original ids, which the interview
+         sidebar's "interview-*" clone doesn't share. Mirrored here so the
+         clone matches pixel-for-pixel instead of falling back to browser
+         defaults (see the interview-context-block section in
+         candidate.html/candidate.js). */
+      #interview-promise-step { flex: none; }
+      #interview-org-context {
+        white-space: pre-wrap;
+        background: var(--paper-deep);
+        border-left: 3px solid var(--teal);
+        border-radius: 0 9px 9px 0;
+        padding: 0.85rem 1rem;
+      }
+
+      /* Every expandable section reads as the same clickable control —
+         "Everything this round is allowed to do" used its own one-off
+         style (bigger, no visible button surface) while the others used a
+         plain teal label with extra indent; unified here so every summary
+         looks and behaves like a button at the same indent, with a rotating
+         chevron as the only thing that differs between open and closed.
+         align-items: flex-start (not center) so a summary that wraps to two
+         lines — "What the interviewer has been told..." — keeps its chevron
+         pinned to the first line instead of floating in the middle of the
+         wrapped block. */
+      #promise-detail > summary,
+      .disclosure > summary {
+        cursor: pointer;
+        display: flex;
+        align-items: flex-start;
+        flex-wrap: wrap;
+        gap: 0.4rem 0.55rem;
+        margin: 0;
+        padding: 0.65rem 0.85rem;
+        border-radius: 9px;
+        background: var(--paper-deep);
+        border: 1px solid var(--rule);
+        font-family: var(--serif);
+        font-size: 0.95rem;
+        font-weight: 600;
+        letter-spacing: normal;
+        text-transform: none;
+        color: var(--ink);
+        list-style: none;
+        transition: border-color 0.14s ease, background-color 0.14s ease;
+      }
+      #promise-detail > summary::-webkit-details-marker,
+      .disclosure > summary::-webkit-details-marker {
+        display: none;
+      }
+      #promise-detail > summary::before,
+      .disclosure > summary::before {
+        content: "▸";
+        flex: none;
+        color: var(--teal);
+        font-size: 0.68rem;
+        line-height: 1.5;
+        transition: transform 0.15s ease;
+      }
+      /* Keyed off .is-expanded (toggled by setDisclosureOpen in
+         candidate.js) rather than the native [open] attribute: closing is
+         animated and [open] doesn't come off until that animation finishes,
+         but the chevron should rotate back the instant the collapse starts,
+         not lag behind it. */
+      .disclosure.is-expanded > summary::before {
+        transform: rotate(90deg);
+      }
+      #promise-detail > summary:hover,
+      #promise-detail > summary:focus-visible,
+      .disclosure > summary:hover,
+      .disclosure > summary:focus-visible {
+        border-color: var(--teal);
+        background: var(--paper);
+      }
+      .promises__count { margin-left: auto; }
+
+      /* The safeguarding block's teal accent moves from the whole box (which
+         indented its summary differently from the other two) to just its
+         expanded body, so all three buttons sit at the same indent and only
+         the revealed content carries the "handle with care" marker. */
+      .disclosure--care {
+        border-left: none;
+        padding-left: 0;
+        margin: 0;
+        display: block;
+      }
+      .disclosure--care > summary ~ * {
+        border-left: 3px solid var(--teal);
+        padding-left: 0.9rem;
+        margin-top: 0.6rem;
+      }
+
+      /* Centered while there's nothing to share the screen with; pushed to
+         the side once the drawer is open, so the two never compete for the
+         same space. Toggled by the "sidebar-open" class on <body>.
+
+         Driven by margin-left, not align-items: align-items is a discrete
+         keyword property — browsers snap it instantly, they don't tween it —
+         so switching center/flex-start on the flex container made the login
+         box jump instead of slide. margin-left IS animatable, so both blocks
+         instead stay flex-start always and get an explicit calculated
+         left margin that happens to equal "centered" when the drawer's shut.
+         max(0px, …) keeps that margin from going negative (which would push
+         the block off-screen) on a viewport narrower than the block itself. */
+      .sea__ink,
+      .card--entry {
+        margin-left: 0;
+        transition: margin-left 0.32s cubic-bezier(0.2, 0.7, 0.3, 1);
+      }
+
+      /* Wider than the card on purpose — the question deserves more room
+         than the button that answers it, so the two don't read as the same
+         size block stacked on itself. 29.7rem is the card's own 27rem + 10%.
+         .sea__line carries its own, narrower cap (22ch) in interview.css,
+         which wrapped the headline into two cramped, short lines even inside
+         a wider container — raised to match .sea__ink so it can actually use
+         the extra room instead of wrapping well short of it. */
+      .sea__ink,
+      .sea__line {
+        max-width: 29.7rem;
+      }
+
+      body:not(.sidebar-open) .sea { text-align: center; }
+      body:not(.sidebar-open) .sea__ink {
+        margin-left: max(0px, calc((100% - 29.7rem) / 2));
+      }
+      body:not(.sidebar-open) .card--entry {
+        margin-left: max(0px, calc((100% - 27rem) / 2));
+      }
+      /* .sea__line and .sea__note cap their OWN width (22ch / 36ch) — that
+         makes each a narrower box than .sea__ink, and text-align only
+         centers text within a box, not the box itself within its parent, so
+         without this they'd still hug the left edge of an otherwise-centered
+         .sea__ink. */
+      body:not(.sidebar-open) .sea__line,
+      body:not(.sidebar-open) .sea__note {
+        margin-inline: auto;
+      }
+
+      /* The looping background video sits behind everything else in .sea,
+         under the same dark scrim (.sea::after) that already keeps text
+         readable over the artwork — .sea > * normally gets position:relative
+         and z-index:1 for that reason, which this overrides back to a plain
+         full-bleed layer sitting at the back. */
+      .sea__bg {
+        position: absolute;
+        inset: 0;
+        z-index: 0;
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+      }
+
+      /* interview.css paints .sea with its own wave-art background-image
+         (--riso-art) underneath everything — with the looping video now
+         covering the same area, that art only ever showed as a flash of
+         the wave jpeg for the instant before the video's first frame
+         decoded. Killing it here (rather than in interview.css, which
+         stays a verbatim copy of the production file) removes that flash;
+         .sea__bg's own dark background (below) covers the gap instead. */
+      .sea { background-image: none; background-color: #0a1412; }
+
+      /* interview.css's .talk has no surface of its own — mic button,
+         transcript toggle and the chat bubbles all just float directly on
+         the video/scrim. This gives it a frosted-glass panel to sit on
+         instead, in the same idiom .btn--small already uses for the
+         transcript toggle (translucent dark + backdrop-filter blur), so the
+         video stays visible through it rather than being hidden by a solid
+         card. */
+      #interview-step {
+        background: rgba(10, 20, 18, 0.02);
+        backdrop-filter: blur(16px);
+        -webkit-backdrop-filter: blur(16px);
+        border: 1px solid rgba(244, 239, 224, 0.06);
+        border-radius: 20px;
+        padding: clamp(1.1rem, 2.2vw, 1.8rem);
+        box-shadow: 0 12px 40px rgba(0, 0, 0, 0.08);
+      }
+
+      .demo-badge {
+        position: fixed;
+        top: 0.9rem;
+        left: 1rem;
+        z-index: 950;
+        font-family: var(--mono);
+        font-size: 0.62rem;
+        letter-spacing: 0.1em;
+        text-transform: uppercase;
+        background: rgba(10, 20, 18, 0.7);
+        color: #f4efe0;
+        padding: 0.3rem 0.6rem;
+        border-radius: 999px;
+      }
+
+      @media (max-width: 900px) {
+        .sidebar.open { width: min(90vw, 26rem); }
+      }
+    </style>
+  </head>
+  <body>
+    <p class="demo-badge">Guided demo — no real data</p>
+
+    <!-- Two independent toggles, one per page — only one is ever visible,
+         since the pages themselves are mutually exclusive (admit-step vs
+         interview-step). Deliberately not one shared button relabeled by
+         JS: see the two separate sidebars below for why. -->
+    <button id="login-sidebar-open" type="button" class="btn btn--quiet btn--small sidebar-open-btn">
+      Rules ▸
+    </button>
+    <button id="interview-sidebar-open" type="button" class="btn btn--quiet btn--small sidebar-open-btn" hidden>
+      Rules & submission ▸
+    </button>
+
+    <!-- The conversation stage — always the full page. -->
+    <section class="sea" aria-labelledby="sea-heading">
+      <video
+        class="sea__bg"
+        autoplay
+        loop
+        muted
+        playsinline
+        disablepictureinpicture
+        preload="auto"
+        aria-hidden="true"
+      >
+        <source src="assets/background.mp4" type="video/mp4" />
+      </video>
+
+      <div class="sea__ink">
+        <p class="wordmark">Candoor</p>
+        <p id="asking" class="asking"></p>
+        <h1 id="sea-heading" class="sea__line"></h1>
+        <p class="sea__note">Nothing is kept unless you approve it.</p>
+      </div>
+
+      <section id="admit-step" class="card card--entry">
+        <h2 class="card__title">Your key</h2>
+        <p class="muted">The key from your invitation. Nobody — including Candoor — knows which key belongs to whom.</p>
+        <p class="notice">
+          Your key is spent the moment you enter it. Once you are in, do not
+          reload or close this page — the interview cannot be resumed, and you
+          would need a new key.
+        </p>
+        <form id="admit-form">
+          <label for="round">Round</label>
+          <input id="round" value="3ed1fb72-c20f-4b66-b260-7eb1118a5a0f" readonly />
+          <label for="token">Key</label>
+          <input id="token" value="91e711097734d3b85a6756de58d2627" readonly />
+          <button type="submit" class="btn btn--go">Enter</button>
+        </form>
+        <p id="admit-error" class="error" hidden></p>
+      </section>
+
+      <section id="interview-step" class="talk" hidden>
+        <div class="mic">
+          <button id="mic-button" class="mic__button" type="button" aria-pressed="false">
+            <span class="mic__glyph" aria-hidden="true"></span>
+            <span id="mic-label" class="mic__label">Start the interview</span>
+          </button>
+          <div class="mic__read">
+            <span id="mic-state" class="state" role="status">microphone off</span>
+          </div>
+        </div>
+
+        <!-- Nothing to transcribe yet — this section marks ITSELF as the
+             interview, and the chat only appears once there's a first turn
+             to show, on clicking "Start the interview" above. -->
+        <button id="transcript-toggle" class="btn btn--quiet btn--small" type="button" aria-expanded="true" aria-controls="exchange" hidden>
+          Hide what the interviewer says
+        </button>
+
+        <ol id="exchange" class="exchange" aria-live="polite" hidden></ol>
+
+        <div id="progress" class="progress" hidden><span id="progress-fill" class="progress__fill"></span></div>
+        <p id="turn-count" class="state state--count" hidden></p>
+      </section>
+    </section>
+
+    <!-- Login-page sidebar: rules, safeguarding, fingerprint, AI context.
+         Its own component — opened by #login-sidebar-open, closed for good
+         (not just collapsed) the moment enterInterview() runs, since none of
+         this belongs to the interview page. Does not share markup, styling
+         hooks beyond the generic .sidebar/.paper base, or JS functions with
+         #interview-sidebar below. -->
+    <aside id="login-sidebar" class="sidebar paper" aria-hidden="true">
+      <section id="promise-step" class="pane" aria-labelledby="promise-heading">
+        <h2 id="promise-heading" class="pane__title">What this round promises</h2>
+        <p class="muted">
+          Derived from the round's locked configuration, not written for you —
+          the round cannot overstate itself.
+        </p>
+        <p id="brief-line" class="notice" hidden></p>
+
+        <details id="promise-detail" class="disclosure">
+          <summary>
+            <span class="promises__lede">Everything this round is allowed to do</span>
+            <span id="promise-count" class="promises__count"></span>
+          </summary>
+          <ul id="promise-list" class="promises"></ul>
+        </details>
+
+        <details id="safeguarding-block" class="disclosure disclosure--care" hidden>
+          <summary><span class="promises__lede">If you need support right now</span></summary>
+          <p id="safeguarding-notice"></p>
+          <p id="safeguarding-channel" class="muted"></p>
+          <p class="muted">
+            Nobody is watching this conversation while it happens, and nothing
+            here is reported for you. Taking that route is your decision alone.
+          </p>
+        </details>
+
+        <p id="reduced-notice" class="notice" hidden></p>
+
+        <p class="fingerprint">Fingerprint <code id="fingerprint"></code></p>
+
+        <details id="context-block" class="disclosure" hidden>
+          <summary>What the interviewer has been told about your organisation</summary>
+          <p class="muted">
+            Background only, so it understands your words. Not a list of
+            questions, and it says nothing about you.
+          </p>
+          <blockquote id="org-context"></blockquote>
+        </details>
+      </section>
+    </aside>
+
+    <!-- Interview-page sidebar: submission + outcome only. Its own
+         component — opened by #interview-sidebar-open, hidden entirely
+         until enterInterview() runs. Does not share JS open/close/toggle
+         functions with #login-sidebar above; each manages its own
+         open/closed state independently. -->
+    <aside id="interview-sidebar" class="sidebar paper" aria-hidden="true" hidden>
+      <!-- This section's markup mirrors #promise-step in #login-sidebar
+           (same round data, same visual shape), but every id below is its
+           own "interview-*" copy — paintInterviewPromises() in candidate.js
+           fills these independently of paintInvitation() filling the login
+           sidebar's ids. Neither reads nor writes the other's elements. -->
+      <section id="interview-promise-step" class="pane" aria-labelledby="interview-promise-heading">
+        <h2 id="interview-promise-heading" class="pane__title">What this round promises</h2>
+        <p class="muted">
+          Derived from the round's locked configuration, not written for you —
+          the round cannot overstate itself.
+        </p>
+        <p id="interview-brief-line" class="notice" hidden></p>
+
+        <details id="interview-promise-detail" class="disclosure">
+          <summary>
+            <span class="promises__lede">Everything this round is allowed to do</span>
+            <span id="interview-promise-count" class="promises__count"></span>
+          </summary>
+          <ul id="interview-promise-list" class="promises"></ul>
+        </details>
+
+        <details id="interview-safeguarding-block" class="disclosure disclosure--care" hidden>
+          <summary><span class="promises__lede">If you need support right now</span></summary>
+          <p id="interview-safeguarding-notice"></p>
+          <p id="interview-safeguarding-channel" class="muted"></p>
+          <p class="muted">
+            Nobody is watching this conversation while it happens, and nothing
+            here is reported for you. Taking that route is your decision alone.
+          </p>
+        </details>
+
+        <p id="interview-reduced-notice" class="notice" hidden></p>
+
+        <p class="fingerprint">Fingerprint <code id="interview-fingerprint"></code></p>
+
+        <details id="interview-context-block" class="disclosure" hidden>
+          <summary>What the interviewer has been told about your organisation</summary>
+          <p class="muted">
+            Background only, so it understands your words. Not a list of
+            questions, and it says nothing about you.
+          </p>
+          <blockquote id="interview-org-context"></blockquote>
+        </details>
+      </section>
+
+      <!-- A permanent tab. Only its CONTENTS are conditional: "Nothing
+           yet." and a disabled Approve until a real interview actually
+           finishes — nothing here is ever filled in by the guide, only by
+           the mic button's own real click handler. -->
+      <details id="draft-step" class="disclosure" aria-labelledby="draft-heading">
+        <summary><span class="promises__lede" id="draft-heading">What would be submitted</span></summary>
+        <p class="muted">
+          Your words, with names, teams and dates generalized. This is the
+          exact text that would be stored, and it is stored only if you
+          approve it — close this page instead and nothing is kept.
+        </p>
+
+        <blockquote id="draft" class="draft">Nothing yet.</blockquote>
+
+        <p id="draft-hint" class="muted" hidden>
+          Something here you never said, or would rather not send? Click a
+          line to take it out. Click it again to put it back.
+        </p>
+        <p id="draft-removed" class="notice" hidden></p>
+
+        <div class="actions">
+          <button id="review" class="btn btn--quiet" type="button">Show me the text</button>
+          <button id="approve" class="btn btn--go" type="button" disabled>Approve this text</button>
+          <button id="discard" class="btn btn--leave" type="button">Discard everything</button>
+        </div>
+      </details>
+
+      <section id="done-step" class="pane pane--done" hidden>
+        <h2 id="done-heading" class="pane__title"></h2>
+        <p id="done-message"></p>
+      </section>
+    </aside>
+
+    <script src="candidate-data.js"></script>
+    <script src="guide.js"></script>
+    <script src="candidate.js"></script>
+  </body>
+</html>
